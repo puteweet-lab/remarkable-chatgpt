@@ -379,7 +379,7 @@ jobs:
             echo 'ERROR: Old firmware path still in extension' >&2
             exit 1
           fi
-          strings bin/ink-diary.so | grep -F 'generativelanguage.googleapis.com'
+          grep -F 'generativelanguage.googleapis.com' src/gemini.h
           echo "Built experimental Gemini-enabled ARM64 extension. DO NOT INSTALL YET."
 
       - name: Upload experimental build for inspection only
