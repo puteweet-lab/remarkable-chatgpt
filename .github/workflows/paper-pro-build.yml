@@ -1,7 +1,7 @@
 # EXPERIMENTAL: builds Ink Diary for Paper Pro using the 3.28 Ferrari SDK.
 # The target device runs 3.29.1.0. Never install this build until ABI and
 # firmware-dependent notebook insertion methods have been verified.
-name: Paper Pro experimental ARM64 build
+name: Paper Pro experimental ARM64 build (firmware guard fixed)
 
 on:
   workflow_dispatch:
@@ -116,8 +116,14 @@ jobs:
               )
               changed[diary] = substitute_once(
                   changed[diary],
+                  'QFile version("/usr/share/remarkable/update.conf");',
+                  'QFile version("/etc/os-release");',
+                  'diary.cpp firmware path',
+              )
+              changed[diary] = substitute_once(
+                  changed[diary],
                   '"REMARKABLE_RELEASE_VERSION=3.27.3.0"',
-                  '"REMARKABLE_RELEASE_VERSION=3.29.1.0"',
+                  '"IMG_VERSION=\\"3.29.1.0\\""',
                   'diary.cpp firmware guard',
               )
               return original, changed
@@ -162,12 +168,18 @@ jobs:
           file bin/config-model
           readelf -h bin/ink-diary.so | grep -E 'Class:|Machine:'
           test -s bin/ink-diary.so
-          echo "Built experimental native extension. DO NOT INSTALL YET."
+          strings bin/ink-diary.so | grep -F '/etc/os-release'
+          strings bin/ink-diary.so | grep -F 'IMG_VERSION=' 
+          if strings bin/ink-diary.so | grep -F '/usr/share/remarkable/update.conf'; then
+            echo 'ERROR: Old firmware path still in extension' >&2
+            exit 1
+          fi
+          echo "Built experimental native extension with Codex firmware guard. DO NOT INSTALL YET."
 
       - name: Upload experimental build for inspection only
         uses: actions/upload-artifact@v4
         with:
-          name: ink-diary-paper-pro-UNTESTED-DO-NOT-INSTALL
+          name: ink-diary-paper-pro-FIRMWARE-FIX-UNTESTED
           path: |
             bin/ink-diary.so
             bin/config-model
